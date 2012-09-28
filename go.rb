@@ -138,14 +138,13 @@ def searchEntries(file, searches)
 					prediction[testvalue] = lev
 				end
 
-			
-				if (values.count > 3 and values[3] == "ssh") then
-					mode = :ssh
-				elsif (values.count > 3) then
-					mode = :exec
-				end
-
                         	if (testvalue == search)
+					if (values.count > 3 and values[3] == "ssh") then
+						mode = :ssh
+					elsif (values.count > 3) then
+						mode = :exec
+					end
+
 					case mode
 						when :directory
 							printVerbose("Found " + search + " -- executing.")
@@ -252,4 +251,5 @@ case $options[:mode]
 			puts opts
 		end
 end
+# } 
 
