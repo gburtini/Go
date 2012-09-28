@@ -84,6 +84,8 @@ def listEntries(file)
 	list = File.open(file).readlines
 
 	printVerbose("Found " + list.count.to_s + " lines.")
+	puts "Keys / Search Terms".ljust(45) + "   " + "Description".rjust(50) + " => " + "Path / Action".ljust(30)
+	puts "="*132
 	list.each do |entry|
 		if !(/^\s*[#%]/.match(entry) || /^$/.match(entry)) then
 			values = entry.split(/\|/).map do |value|
@@ -94,10 +96,13 @@ def listEntries(file)
 				if (values[3] != nil) then
 					values[1] = values[3] + " " + values[1]
 				end
-				puts values[0] + " - " + values[2].to_s + " (" + values[1] + ")"
+
+				# TODO: these magic numbers need to be replaced with the actual longest values
+				puts (values[0].gsub(",", ", ")).ljust(45) + " | " + values[2].to_s.rjust(50) + " => " + values[1].ljust(30) + ""
 			end
 		end
 	end
+	puts "="*132
 end
 
 # searches the file for the first match in the searches array.
