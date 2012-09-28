@@ -92,7 +92,7 @@ def listEntries(file)
 			
 			if (values != nil) then
 				if (values[3] != nil) then
-					values[1] = "ssh " + values[1]
+					values[1] = values[3] + " " + values[1]
 				end
 				puts values[0] + " - " + values[2].to_s + " (" + values[1] + ")"
 			end
@@ -136,6 +136,8 @@ def searchEntries(file, searches)
 			
 				if (values.count > 3 and values[3] == "ssh") then
 					mode = :ssh
+				elsif (values.count > 3) then
+					mode = :exec
 				end
 
                         	if (testvalue == search)
@@ -147,7 +149,9 @@ def searchEntries(file, searches)
 							exec 'bash'
 	
 						when :ssh
-							exec 'bash -c "ssh" ' + values[1]
+							exec 'bash -c "ssh ' + values[1] + '"'
+						when :exec
+							exec 'bash -c "' + values[3] + ' ' + values[1] + '"'
 					end
 
 					Process.exit
