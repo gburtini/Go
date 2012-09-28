@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
-# this unfortunately outputs almost everything on standard error. only the path comes out on standard out, because its partner bash script depends on it.
-
 require 'optparse'
+
 DEFAULT_NAME = File.expand_path "~/.go.data"
 DEFAULT_EDITOR = "vim"
 
@@ -32,28 +31,33 @@ def editFile(file)
 	else
 		system( DEFAULT_EDITOR + ' ' + file )
 	end
-	$stderr.puts "Database file " + file + " updated.\n"
+	puts "Database file " + file + " updated.\n"
 	Process.exit
 end
 
-# prints a list of all the values
+# prints a list of all the values in the database
 def listEntries(file) 
 	printVerbose("Listing entries in " + file)
 	list = File.open(file).readlines
 
-	printVerbose("Found " + file.count + " lines.")
+	printVerbose("Found " + list.count.to_s + " lines.")
 	list.each do |entry|
-		if !(/^\s*[#%]/.match(entry)) then
+		if !(/^\s*[#%]/.match(entry) || /^$/.match(entry)) then
 			values = entry.split(/\|/).map do |value|
 				value.strip!
 			end
 			
-			$stderr.puts values[0] + " - " + values[2] + " (" + values[1] + ")"
+			if (values != nil) then
+				if (values[3] != nil) then
+					values[1] = "ssh " + values[1]
+				end
+				puts values[0] + " - " + values[2].to_s + " (" + values[1] + ")"
+			end
 		end
 	end
 end
 
-# searches the file for the first match
+# searches the file for the first match in the searches array.
 def searchEntries(file, searches)
 	printVerbose("Searching the entries in " + file)
 
@@ -70,15 +74,28 @@ def searchEntries(file, searches)
 			printExtraVerbose("Checking row " + v)
 			# TODO: validate row here.
 
+			mode = :directory
+			
                         values = v.split(/\|/).map do |a|
 				a.strip!
 			end
 
+			if(values.count > 3 and values[3] == "ssh") then
+				mode = :ssh
+			end
+
                         if (values[0] == search)
-				printVerbose("Found " + search + " -- executing.")
-                                $stderr.puts values[2]
-                                Dir.chdir(File.expand_path values[1])	# output the actual path for the bash script to redirect.
-				exec 'bash'
+				case mode
+					when :directory
+						printVerbose("Found " + search + " -- executing.")
+		                                puts values[2] + " ==> Changing directory to " + values[1]
+                		                Dir.chdir(File.expand_path values[1])	# output the actual path for the bash script to redirect.
+						exec 'bash'
+
+					when :ssh
+						exec 'bash -c "ssh" ' + values[1]
+				end
+
 				Process.exit
                         end
                 end
@@ -114,7 +131,7 @@ OptionParser.new do |opts|
 	end
 
 	opts.on_tail( '-h', '--help', 'Display this screen.' ) do
-     		$stderr.puts opts
+     		puts opts
    		Process.exit
 	end
 end.parse!
