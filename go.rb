@@ -227,7 +227,7 @@ end
 # int main() { 
 $options = {}
 opts = OptionParser.new do |opts|
-	opts.banner = "Usage: go [-l] [-e] [-w] [-v] [-s] [-h] [-d db_path] [slug]"
+	opts.banner = "Usage: go [-a] [-l] [-e] [-w] [-v] [-s] [-h] [-d db_path] [slug]"
 	$options[:verbose] = false;
 	$options[:extra_verbose] = false;
 	opts.on('-v', '--verbose', "Output more information.") do
