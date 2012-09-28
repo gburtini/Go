@@ -9,8 +9,8 @@
 ###	The database file is stored by default in ~/.go.data. If you run go without a valid database file
 ###	it will automagically create one. Just a heads up, so that we don't pollute your ~ without telling you. 
 ###
-###	TODO: change the database format to something reasonable.
-###	TODO: add -a to add a path to the file.
+###	TODO: 	change the database format to something reasonable... a B+-tree can reflect the data efficiently.
+###		although it is definitely overkill, considering the reasonable size of the database.
 
 require 'optparse'
 
@@ -62,13 +62,35 @@ def levenshtein(a, b)
 	return current[b.size - 1]
 end
 
-# invokes $EDITOR on the file. if the file doesn't exist, creates it and puts a comment at the top.
-def editFile(file)
+def validateFile(file)
 	if ( ! File.exists?(file)) then
 		fh = File.new(file, File::CREAT|File::TRUNC|File::RDWR);
-		fh.write("# Put entries below here with [slug | path | title]");
+		fh.puts("# Put entries below here with [slug | path | title [| binary]]");
+		fh.puts("# If you specify a fourth parameter, path is treated as arguments to binary.")
 		fh.close
 	end
+end
+
+def addRecord(file, arguments) 
+	validateFile(file)
+
+	# TODO: this needs to take arbitrary numbers of arguments 
+	# -and- needs to check for duplicate paths (add comma delimited instead
+	# of duplicate records)
+
+	# TODO: check for duplicate keys.
+
+	key = arguments[0]
+	path = Dir.pwd
+	message = arguments[1]
+	fh = File.open(file, "a");
+	fh.puts(key + " | " + path + " | " + message + "")
+	fh.close
+end
+
+# invokes $EDITOR on the file. if the file doesn't exist, creates it and puts a comment at the top.
+def editFile(file)
+	validateFile(file)
 
 	printVerbose("Starting editor on " + file)
 	
@@ -222,6 +244,11 @@ opts = OptionParser.new do |opts|
 	end
 
 	$options[:mode] = :search
+
+	opts.on('-a', '--add', 'Add record to the database.') do 
+		$options[:mode] = :add
+	end
+
 	opts.on('-e', '--edit', 'Edit the database.') do 
 		$options[:mode] = :edit
 	end
@@ -243,6 +270,8 @@ opts.parse!
 
 # determine what to actually do, based on the options passed. by default, call searchEntries.
 case $options[:mode]
+	when :add
+		addRecord($options[:db_path], ARGV)
 	when :edit
 		editFile($options[:db_path])
 	when :list
