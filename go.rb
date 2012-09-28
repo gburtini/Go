@@ -187,7 +187,7 @@ def searchEntries(file, searches)
 	end
 	recommendations.chomp!(", ")
 
-	# print out the suggestions	
+	# print out the suggestions... TODO: make this an interactive question in the :suggest = 1 case)
 	if (recommendations.length > 0) then
 		if ($options[:suggest] > 1) then
 			puts "No command found. Did you mean one of the following?"
