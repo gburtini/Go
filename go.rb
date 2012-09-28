@@ -12,7 +12,7 @@ def printVerbose(string)
 end
 
 def printExtraVerbose(string)
-	if($options[:extra_verbose]) then
+	if ($options[:extra_verbose]) then
 		$stderr.puts string
 	end
 end
@@ -114,7 +114,7 @@ def searchEntries(file, searches)
 				prediction[values[0]] = lev
 			end
 
-			if(values.count > 3 and values[3] == "ssh") then
+			if (values.count > 3 and values[3] == "ssh") then
 				mode = :ssh
 			end
 
@@ -156,7 +156,7 @@ def searchEntries(file, searches)
 
 	recommendations.chomp!(", ")
 	
-	if(recommendations.length > 0) then
+	if (recommendations.length > 0) then
 		if ($options[:suggest] > 1) then
 			puts "No command found. Did you mean one of the following?"
 			puts recommendations
@@ -211,7 +211,7 @@ case $options[:mode]
 	when :list
 		listEntries($options[:db_path])
 	else	# when :search
-		if(ARGV.count > 0) then
+		if (ARGV.count > 0) then
 			searchEntries($options[:db_path], ARGV)
 		else
 			puts opts
