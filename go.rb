@@ -119,12 +119,13 @@ end
 # prints a list of all the values in the database
 def listEntries(file) 
 	# TODO: this method is not pretty. What it generates is pretty though.
+	# TODO: this should output ENV['COLUMNS'] wide... not this strange 132+ stuff.
 	printVerbose("Listing entries in " + file)
 	list = readFile(file)
 
 	printVerbose("Found " + list.count.to_s + " lines.")
 	puts "Keys / Search Terms".ljust(45) + "   " + "Description".rjust(50) + " => " + "Path / Action".ljust(30)
-	puts "="*132 #TODO: what is 132
+	puts "="*132 # TODO: what is 132? 
 	list.each do |entry|
 		values = entry.split(/\|/).map do |value|
 			value.strip!
