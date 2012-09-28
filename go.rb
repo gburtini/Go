@@ -8,6 +8,9 @@
 ###
 ###	The database file is stored by default in ~/.go.data. If you run go without a valid database file
 ###	it will automagically create one. Just a heads up, so that we don't pollute your ~ without telling you. 
+###
+###	TODO: change the database format to something reasonable.
+###	TODO: add -a to add a path to the file.
 
 require 'optparse'
 
