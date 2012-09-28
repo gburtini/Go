@@ -33,9 +33,9 @@ def printExtraVerbose(string)
 end
 
 # associated Levenshtein costs.
-L_ADD_COST = 1
-L_DEL_COST = 1
-L_SUB_COST = 1
+L_ADD_COST = 2
+L_DEL_COST = 3
+L_SUB_COST = 2 
 def levenshtein(a, b)
 	back = nil, back2 = nil
 	current = (1..b.size).to_a + [0]
@@ -128,7 +128,7 @@ def searchEntries(file, searches)
 
 			# allow comma delimited keys (to allow multiple search strings for one row)
 			values[0].split(",").each do |testvalue|
-				lev = levenshtein(search, testvalue)
+				lev = levenshtein(search, testvalue) / testvalue.length
 				if (prediction[testvalue] == nil || lev < prediction[testvalue]) then
 					prediction[testvalue] = lev
 				end
