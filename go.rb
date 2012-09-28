@@ -1,8 +1,23 @@
 #!/usr/bin/env ruby
+###	Go.rb - a command line bookmarks/navigation tool
+###		by Giuseppe Burtini <joe@truephp.com>
+###	
+###	Run go.rb -h for quick synopsis. Go allows you to navigate between directories or ssh servers
+###	by using short slugs. Run go.rb -e to edit the database of slugs, go -l to see the available
+###	database and go [slug] to actually perform a navigation. 
+###
+###	The database file is stored by default in ~/.go.data. If you run go without a valid database file
+###	it will automagically create one. Just a heads up, so that we don't pollute your ~ without telling you. 
+
 require 'optparse'
 
+# the default database file (this can be overridden with --database-path/-d)
 DEFAULT_NAME = File.expand_path "~/.go.data"
+
+# the maximum Levenshtein threshold (this can be overridden with --suggest/-s
 LEVENTHRESHOLD = 10
+
+# the default text editor, for editing the database file. this will only be used if $EDITOR isn't set
 DEFAULT_EDITOR = "vim"
 
 def printVerbose(string) 
@@ -17,6 +32,7 @@ def printExtraVerbose(string)
 	end
 end
 
+# associated Levenshtein costs.
 L_ADD_COST = 1
 L_DEL_COST = 1
 L_SUB_COST = 1
@@ -106,40 +122,47 @@ def searchEntries(file, searches)
 
 			mode = :directory
 			
-                        values = v.split(/\|/).map do |a|
+                        values = v.split("|").map do |a|
 				a.strip!
 			end
-			lev = levenshtein(search, values[0])
-			if (prediction[values[0]] == nil || lev < prediction[values[0]]) then
-				prediction[values[0]] = lev
-			end
 
-			if (values.count > 3 and values[3] == "ssh") then
-				mode = :ssh
-			end
-
-                        if (values[0] == search)
-				case mode
-					when :directory
-						printVerbose("Found " + search + " -- executing.")
-		                                puts values[2] + " ==> Changing directory to " + values[1]
-                		                Dir.chdir(File.expand_path values[1])	# output the actual path for the bash script to redirect.
-						exec 'bash'
-
-					when :ssh
-						exec 'bash -c "ssh" ' + values[1]
+			# allow comma delimited keys (to allow multiple search strings for one row)
+			values[0].split(",").each do |testvalue|
+				lev = levenshtein(search, testvalue)
+				if (prediction[testvalue] == nil || lev < prediction[testvalue]) then
+					prediction[testvalue] = lev
 				end
 
-				Process.exit
-                        end
+			
+				if (values.count > 3 and values[3] == "ssh") then
+					mode = :ssh
+				end
+
+                        	if (testvalue == search)
+					case mode
+						when :directory
+							printVerbose("Found " + search + " -- executing.")
+			                                puts values[2] + " ==> Changing directory to " + values[1]
+        	        		                Dir.chdir(File.expand_path values[1])	# output the actual path for the bash script to redirect.
+							exec 'bash'
+	
+						when :ssh
+							exec 'bash -c "ssh" ' + values[1]
+					end
+
+					Process.exit
+	                        end	
+			end
                 end
         end
 
 	# if we get down here, we didn't find anything.
+	# output the Levenshtein suggestions!
+
 	prediction = prediction.sort_by{|key,value| value}
 	iterator = $options[:suggest]
 	
-	recommendations = "";
+	recommendations = "";	# accumulator for the list of suggestions
 	while(iterator > 0) do
 		predicted = prediction.shift
 		if (predicted == nil) then
@@ -153,9 +176,9 @@ def searchEntries(file, searches)
 		end
 		iterator -= 1
 	end
-
 	recommendations.chomp!(", ")
-	
+
+	# print out the suggestions	
 	if (recommendations.length > 0) then
 		if ($options[:suggest] > 1) then
 			puts "No command found. Did you mean one of the following?"
@@ -167,6 +190,8 @@ def searchEntries(file, searches)
 end
 	
 
+
+# int main() { 
 $options = {}
 opts = OptionParser.new do |opts|
 	opts.banner = "Usage: go [-l] [-e] [-w] [-v] [-s] [-h] [-d db_path] [slug]"
@@ -205,6 +230,7 @@ opts = OptionParser.new do |opts|
 end
 opts.parse!
 
+# determine what to actually do, based on the options passed. by default, call searchEntries.
 case $options[:mode]
 	when :edit
 		editFile($options[:db_path])
