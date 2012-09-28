@@ -11,6 +11,7 @@
 ###
 ###	TODO: 	change the database format to something reasonable... a B+-tree can reflect the data efficiently.
 ###		although it is definitely overkill, considering the reasonable size of the database.
+###	TODO: 	autocomplete interface with bash.
 
 require 'optparse'
 
@@ -21,7 +22,10 @@ DEFAULT_NAME = File.expand_path "~/.go.data"
 LEVENTHRESHOLD = 10
 
 # the default text editor, for editing the database file. this will only be used if $EDITOR isn't set
-DEFAULT_EDITOR = "vim"
+DEFAULT_EDITOR = "vi"
+
+# the default shell to be launched.
+DEFAULT_SHELL = "bash"
 
 def printVerbose(string) 
 	if ($options[:verbose] or $options[:extra_verbose]) then
@@ -37,8 +41,8 @@ end
 
 # associated Levenshtein costs.
 L_ADD_COST = 2
-L_DEL_COST = 3
-L_SUB_COST = 2 
+L_DEL_COST = 2
+L_SUB_COST = 2000 
 def levenshtein(a, b)
 	back = nil, back2 = nil
 	current = (1..b.size).to_a + [0]
@@ -71,6 +75,13 @@ def validateFile(file)
 	end
 end
 
+def readFile(file) 
+	list = File.open(file).readlines
+	list.reject! { |c| c.strip.empty? }
+	list.reject! { |c| (/^\s*[#%]/.match(c)) } 
+	return list
+end
+
 def addRecord(file, arguments) 
 	validateFile(file)
 
@@ -79,6 +90,8 @@ def addRecord(file, arguments)
 	# of duplicate records)
 
 	# TODO: check for duplicate keys.
+
+	# TODO: validate input.
 
 	key = arguments[0]
 	path = Dir.pwd
@@ -94,7 +107,7 @@ def editFile(file)
 
 	printVerbose("Starting editor on " + file)
 	
-	if (ENV.key?("EDITOR"))  then
+	if (ENV.key?('EDITOR'))  then
 		system( ENV['EDITOR'] + ' ' + file )
 	else
 		system( DEFAULT_EDITOR + ' ' + file )
@@ -105,29 +118,28 @@ end
 
 # prints a list of all the values in the database
 def listEntries(file) 
+	# TODO: this method is not pretty. What it generates is pretty though.
 	printVerbose("Listing entries in " + file)
-	list = File.open(file).readlines
+	list = readFile(file)
 
 	printVerbose("Found " + list.count.to_s + " lines.")
 	puts "Keys / Search Terms".ljust(45) + "   " + "Description".rjust(50) + " => " + "Path / Action".ljust(30)
-	puts "="*132
+	puts "="*132 #TODO: what is 132
 	list.each do |entry|
-		if !(/^\s*[#%]/.match(entry) || /^$/.match(entry)) then
-			values = entry.split(/\|/).map do |value|
-				value.strip!
-			end
+		values = entry.split(/\|/).map do |value|
+			value.strip!
+		end
 			
-			if (values != nil) then
-				if (values[3] != nil) then
-					values[1] = values[3] + " " + values[1]
-				end
-
-				# TODO: these magic numbers need to be replaced with the actual longest values
-				puts (values[0].gsub(",", ", ")).ljust(45) + " | " + values[2].to_s.rjust(50) + " => " + values[1].ljust(30) + ""
+		if (values != nil) then
+			if (values[3] != nil) then
+				values[1] = values[3] + " " + values[1]
 			end
+
+			# TODO: these magic numbers need to be replaced with the actual longest values
+			puts (values[0].gsub(",", ", ")).ljust(45) + " | " + values[2].to_s.rjust(50) + " => " + values[1].ljust(30) + ""
 		end
 	end
-	puts "="*132
+	puts "="*132 # TODO: what is 132? 
 end
 
 # searches the file for the first match in the searches array.
@@ -135,9 +147,8 @@ def searchEntries(file, searches)
 	printVerbose("Searching the entries in " + file)
 
         if File.exists?(file)
-                list = File.open(file).readlines
-		list.reject! { |c| c.strip.empty? }
-        else
+        	list = readFile(file)
+	else
 		printVerbose("File did not exist. Creating it.")
                 editFile(file)
         end
@@ -170,17 +181,23 @@ def searchEntries(file, searches)
 						mode = :exec
 					end
 
+					if (ENV.key?( 'SHELL' )) then
+						shell = ENV['SHELL']
+					else
+						shell = DEFAULT_SHELL
+					end
+					
 					case mode
 						when :directory
 							printVerbose("Found " + search + " -- executing.")
 			                                puts values[2] + " ==> Changing directory to " + values[1]
         	        		                Dir.chdir(File.expand_path values[1])	# output the actual path for the bash script to redirect.
-							exec 'bash'
+							exec shell
 	
 						when :ssh
-							exec 'bash -c "ssh ' + values[1] + '"'
+							exec shell + ' -c "ssh ' + values[1] + '"'
 						when :exec
-							exec 'bash -c "' + values[3] + ' ' + values[1] + '"'
+							exec shell + ' -c "' + values[3] + ' ' + values[1] + '"'
 					end
 
 					Process.exit
