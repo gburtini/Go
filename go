@@ -2,7 +2,7 @@
 # this unfortunately outputs almost everything on standard error. only the path comes out on standard out, because its partner bash script depends on it.
 
 require 'optparse'
-DEFAULT_NAME = "/var/go.data"
+DEFAULT_NAME = File.expand_path "~/.go.data"
 DEFAULT_EDITOR = "vim"
 
 def printVerbose(string) 
@@ -28,9 +28,9 @@ def editFile(file)
 	printVerbose("Starting editor on " + file)
 	
 	if (ENV.key?("EDITOR"))  then
-		system(ENV['EDITOR'] + ' ' + file)
+		system( ENV['EDITOR'] + ' ' + file )
 	else
-		system(DEFAULT_EDITOR + ' ' + file)
+		system( DEFAULT_EDITOR + ' ' + file )
 	end
 	$stderr.puts "Database file " + file + " updated.\n"
 	Process.exit
@@ -77,7 +77,7 @@ def searchEntries(file, searches)
                         if (values[0] == search)
 				printVerbose("Found " + search + " -- executing.")
                                 $stderr.puts values[2]
-                                Dir.chdir(values[1])	# output the actual path for the bash script to redirect.
+                                Dir.chdir(File.expand_path values[1])	# output the actual path for the bash script to redirect.
 				exec 'bash'
 				Process.exit
                         end
@@ -88,7 +88,7 @@ end
 
 $options = {}
 OptionParser.new do |opts|
-	opts.banner = "Usage: go [-l] [-e] [-v] [-d db_path] [slug]"
+	opts.banner = "Usage: go [-l] [-e] [-w] [-v] [-h] [-d db_path] [slug]"
 	$options[:verbose] = false;
 	$options[:extra_verbose] = false;
 	opts.on('-v', '--verbose', "Output more information.") do
