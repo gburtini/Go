@@ -41,8 +41,8 @@ end
 
 # associated Levenshtein costs.
 L_ADD_COST = 2
-L_DEL_COST = 2
-L_SUB_COST = 2000 
+L_DEL_COST = 3
+L_SUB_COST = 2 
 def levenshtein(a, b)
 	back = nil, back2 = nil
 	current = (1..b.size).to_a + [0]
