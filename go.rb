@@ -18,14 +18,18 @@ require 'optparse'
 # the default database file (this can be overridden with --database-path/-d)
 DEFAULT_NAME = File.expand_path "~/.go.data"
 
-# the maximum Levenshtein threshold (this can be overridden with --suggest/-s
-LEVENTHRESHOLD = 10
+# the maximum Levenshtein threshold (this can be overridden with --suggest/-s)
+LEVENTHRESHOLD = 20
 
 # the default text editor, for editing the database file. this will only be used if $EDITOR isn't set
 DEFAULT_EDITOR = "vi"
 
-# the default shell to be launched.
+# the default shell to be launched. this will only be used if $SHELL isn't set.
 DEFAULT_SHELL = "bash"
+
+def terminalSize() 
+	return `stty size`.split.map { |x| x.to_i }.reverse 
+end
 
 def printVerbose(string) 
 	if ($options[:verbose] or $options[:extra_verbose]) then
@@ -77,15 +81,15 @@ end
 
 def readFile(file) 
 	list = File.open(file).readlines
-	list.reject! { |c| c.strip.empty? }
-	list.reject! { |c| (/^\s*[#%]/.match(c)) } 
+	list.reject! { |c| c.strip.empty? }		# remove anything that's just whitespace.
+	list.reject! { |c| (/^\s*[#%]/.match(c)) } 	# remove comments.
 	return list
 end
 
 def addRecord(file, arguments) 
 	validateFile(file)
 
-	# TODO: this needs to take arbitrary numbers of arguments 
+	# TODO: this needs to take arbitrary (optional) number of arguments 
 	# -and- needs to check for duplicate paths (add comma delimited instead
 	# of duplicate records)
 
@@ -118,14 +122,22 @@ end
 
 # prints a list of all the values in the database
 def listEntries(file) 
-	# TODO: this method is not pretty. What it generates is pretty though.
-	# TODO: this should output ENV['COLUMNS'] wide... not this strange 132+ stuff.
 	printVerbose("Listing entries in " + file)
 	list = readFile(file)
 
+	# terminal width, minus the templating characters. 
+	templating_width = 10
+	columns = terminalSize()[0] - templating_width
+	key_width = (columns / 3).floor - 5;
+	description_width = (columns / 3).ceil + 5
+	path_width = (columns / 3).floor
+
 	printVerbose("Found " + list.count.to_s + " lines.")
-	puts "Keys / Search Terms".ljust(45) + "   " + "Description".rjust(50) + " => " + "Path / Action".ljust(30)
-	puts "="*132 # TODO: what is 132? 
+	puts "  Keys / Search Terms".ljust(key_width) +
+		"   " + "Description".rjust(description_width) + 
+		" => " + "Path / Action".ljust(path_width)
+
+	puts "=" * (columns+templating_width)
 	list.each do |entry|
 		values = entry.split(/\|/).map do |value|
 			value.strip!
@@ -136,11 +148,12 @@ def listEntries(file)
 				values[1] = values[3] + " " + values[1]
 			end
 
-			# TODO: these magic numbers need to be replaced with the actual longest values
-			puts (values[0].gsub(",", ", ")).ljust(45) + " | " + values[2].to_s.rjust(50) + " => " + values[1].ljust(30) + ""
+			puts "| " + (values[0].gsub(",", ", ")).ljust(key_width) + 
+				" | " + values[2].to_s.rjust(description_width) + 
+				" => " + values[1].ljust(path_width) + " |"
 		end
 	end
-	puts "="*132 # TODO: what is 132? 
+	puts "=" * (columns+templating_width)
 end
 
 # searches the file for the first match in the searches array.
@@ -246,6 +259,7 @@ end
 $options = {}
 opts = OptionParser.new do |opts|
 	opts.banner = "Usage: go [-a] [-l] [-e] [-w] [-v] [-s] [-h] [-d db_path] [slug]"
+
 	$options[:verbose] = false;
 	$options[:extra_verbose] = false;
 	opts.on('-v', '--verbose', "Output more information.") do
