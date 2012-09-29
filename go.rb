@@ -70,6 +70,17 @@ def levenshtein(a, b)
 	return current[b.size - 1]
 end
 
+def prefixCount(a, b)
+        a, b = a.split(""), b.split("")
+        a.length.times do |index|
+                if(a[index] != b[index]) then
+                        return index
+                end
+        end
+
+        return a.length
+end
+
 def validateFile(file)
 	if ( ! File.exists?(file)) then
 		fh = File.new(file, File::CREAT|File::TRUNC|File::RDWR);
@@ -168,7 +179,9 @@ def searchEntries(file, searches)
         end
 
 	
-	prediction = {}
+	lev_prediction = {}
+	pc_prediction = {}
+
         searches.each do |search|
 		printExtraVerbose("Searching for string " + search)
                 list.each do |v|
@@ -184,8 +197,13 @@ def searchEntries(file, searches)
 			# allow comma delimited keys (to allow multiple search strings for one row)
 			values[0].split(",").each do |testvalue|
 				lev = levenshtein(search, testvalue) / testvalue.length
-				if (prediction[testvalue] == nil || lev < prediction[testvalue]) then
-					prediction[testvalue] = lev
+				pc = prefixCount(testvalue, search)
+
+				if (lev_prediction[testvalue] == nil || lev < lev_prediction[testvalue]) then
+					lev_prediction[testvalue] = lev
+				end
+				if (pc_prediction[testvalue] == nil || pc > pc_prediction[testvalue]) then
+					pc_prediction[testvalue] = pc
 				end
 
                         	if (testvalue == search)
@@ -220,10 +238,18 @@ def searchEntries(file, searches)
                 end
         end
 
+	# check for unique prefix matches
+	pc_prediction = pc_prediction.sort_by{|key,value| value}.reverse
+	first, second = pc_prediction.shift, pc_prediction.shift
+	
+	if (first[1] != second[1] and first[1] != 0) then	# top two results have different values
+		puts "You must have meant " + first[0] + ". Going there now."
+		searchEntries(file, first[0])
+	end
+
 	# if we get down here, we didn't find anything.
 	# output the Levenshtein suggestions!
-
-	prediction = prediction.sort_by{|key,value| value}
+	prediction = lev_prediction.sort_by{|key,value| value}
 	iterator = $options[:suggest]
 	
 	recommendations = "";	# accumulator for the list of suggestions
