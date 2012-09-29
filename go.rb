@@ -92,10 +92,10 @@ def addRecord(file, arguments)
 	# TODO: this needs to take arbitrary (optional) number of arguments 
 	# -and- needs to check for duplicate paths (add comma delimited instead
 	# of duplicate records)
-
 	# TODO: check for duplicate keys.
-
 	# TODO: validate input.
+	# TODO: support ssh
+	# TODO: when adding an ssh connection, make it add the ssh key.
 
 	key = arguments[0]
 	path = Dir.pwd
@@ -242,13 +242,18 @@ def searchEntries(file, searches)
 	end
 	recommendations.chomp!(", ")
 
-	# print out the suggestions... TODO: make this an interactive question in the :suggest = 1 case)
+	# print out the suggestions...
 	if (recommendations.length > 0) then
 		if ($options[:suggest] > 1) then
 			puts "No command found. Did you mean one of the following?"
 			puts recommendations
 		else
-			puts "No command found. Did you mean " + recommendations + "?" 
+			puts "No command found. Did you mean " + recommendations + "?"
+			print "y/[n]: "
+			input = STDIN.gets.chomp.downcase
+			if (input == "y" || input == "yes") then
+				searchEntries(file, recommendations.gsub(/^\'|\'$/, ""));		
+			end	
 		end
 	end
 end
