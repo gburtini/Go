@@ -182,6 +182,8 @@ def searchEntries(file, searches)
 	lev_prediction = {}
 	pc_prediction = {}
 
+	searches = [searches] if not searches.kind_of?(Array)
+
         searches.each do |search|
 		printExtraVerbose("Searching for string " + search)
                 list.each do |v|
